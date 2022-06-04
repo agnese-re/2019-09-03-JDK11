@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import it.polito.tdp.food.model.Adiacenza;
 import it.polito.tdp.food.model.Condiment;
 import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Portion;
@@ -109,6 +111,52 @@ public class FoodDao {
 
 	}
 	
-	
+	public List<String> getAllVertici(double calories) {
+		String sql = "SELECT DISTINCT(portion_display_name) "
+				+ "FROM `portion` "
+				+ "WHERE calories < ?";
+		List<String> result = new ArrayList<String>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setDouble(1, calories);
+			ResultSet rs = st.executeQuery();
+			
+			while(rs.next())
+				result.add(rs.getString("portion_display_name"));
+			
+			conn.close();
+			return result;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+	}
 
+	public List<Adiacenza> getArchi(double calories) {
+		String sql = "SELECT p1.portion_display_name, p2.portion_display_name, COUNT(*) AS pesoArco "
+				+ "FROM `portion` p1, `portion` p2 "
+				+ "WHERE p1.food_code = p2.food_code "
+				+ "	AND p1.portion_display_name > p2.portion_display_name "
+				+ "	AND p1.calories < ? AND p2.calories < ? "
+				+ "GROUP BY p1.portion_display_name, p2.portion_display_name";
+		List<Adiacenza> result = new ArrayList<Adiacenza>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setDouble(1, calories);
+			st.setDouble(2, calories);
+			ResultSet rs = st.executeQuery();
+			
+			while(rs.next())
+				result.add(new Adiacenza(rs.getString("p1.portion_display_name"),
+						rs.getString("p2.portion_display_name"), rs.getInt("pesoArco")));
+			
+			conn.close();
+			return result;
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+	}
 }
